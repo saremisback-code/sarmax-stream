@@ -1,3 +1,4 @@
+/// <reference types="youtube" />
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
 
 export interface Track {
