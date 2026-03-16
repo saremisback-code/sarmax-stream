@@ -14,15 +14,22 @@ export async function searchYouTube(query: string): Promise<YouTubeSearchResult[
   );
   const data = await res.json();
 
-  if (!data.items) return [];
+  if (data.error) {
+    throw new Error(data.error.message || 'YouTube API error');
+  }
+
+  if (!data.items || data.items.length === 0) return [];
 
   const videoIds = data.items.map((item: any) => item.id.videoId).join(',');
 
-  // Get durations
   const detailsRes = await fetch(
     `https://www.googleapis.com/youtube/v3/videos?part=contentDetails,snippet&id=${videoIds}&key=${YOUTUBE_API_KEY}`
   );
   const detailsData = await detailsRes.json();
+
+  if (detailsData.error) {
+    throw new Error(detailsData.error.message || 'YouTube API error');
+  }
 
   return (detailsData.items || []).map((item: any) => ({
     id: item.id,
@@ -38,6 +45,10 @@ export async function getTrendingMusic(): Promise<YouTubeSearchResult[]> {
     `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&chart=mostPopular&videoCategoryId=10&maxResults=20&regionCode=US&key=${YOUTUBE_API_KEY}`
   );
   const data = await res.json();
+
+  if (data.error) {
+    throw new Error(data.error.message || 'YouTube API error');
+  }
 
   return (data.items || []).map((item: any) => ({
     id: item.id,
@@ -57,8 +68,12 @@ function cleanTitle(title: string): string {
     .replace(/\(Lyrics?\)/gi, '')
     .replace(/\[Lyrics?\]/gi, '')
     .replace(/\(Visualizer\)/gi, '')
+    .replace(/\[Visualizer\]/gi, '')
+    .replace(/\(Official\s*Lyric\s*Video\)/gi, '')
+    .replace(/\[Official\s*Lyric\s*Video\]/gi, '')
     .replace(/\|.*$/g, '')
     .replace(/ft\.\s*/gi, 'ft. ')
+    .replace(/\s{2,}/g, ' ')
     .trim();
 }
 
