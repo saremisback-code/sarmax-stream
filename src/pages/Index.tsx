@@ -4,9 +4,11 @@ import { BottomPlayer } from '@/components/BottomPlayer';
 import { TrackCard } from '@/components/TrackCard';
 import { SearchBar } from '@/components/SearchBar';
 import { QueueView } from '@/components/QueueView';
+import { LyricsView } from '@/components/LyricsView';
+import { LegalPage } from '@/components/LegalPages';
 import { PlayerProvider, Track } from '@/context/PlayerContext';
 import { searchYouTube, getTrendingMusic } from '@/lib/youtube';
-import { Loader2, TrendingUp, Search, Music2, AlertCircle } from 'lucide-react';
+import { Loader2, TrendingUp, Music2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 function MainContent() {
@@ -26,7 +28,7 @@ function MainContent() {
     } catch (e: any) {
       console.error('Failed to load trending:', e);
       setError(e.message || 'Failed to load trending music');
-      toast.error('Could not load trending music. Check your API key setup.');
+      toast.error('Could not load trending music.');
     }
     setLoading(false);
   }, []);
@@ -46,7 +48,7 @@ function MainContent() {
     } catch (e: any) {
       console.error('Search failed:', e);
       setError(e.message || 'Search failed');
-      toast.error('Search failed. Check your API key setup.');
+      toast.error('Search failed.');
     }
     setLoading(false);
   }, []);
@@ -60,7 +62,9 @@ function MainContent() {
     }
   };
 
-  const sidebarWidth = collapsed ? '4.5rem' : '16.5rem';
+  const sidebarWidth = collapsed ? '4.5rem' : '15rem';
+  const isLegalPage = currentView === 'terms' || currentView === 'privacy';
+  const isLyricsPage = currentView === 'lyrics';
 
   return (
     <div className="min-h-screen bg-background">
@@ -75,70 +79,76 @@ function MainContent() {
         className="transition-all duration-300 ease-out pb-[var(--player-height)]"
         style={{ marginLeft: sidebarWidth }}
       >
-        <div className="max-w-[1400px] mx-auto px-6 lg:px-8 py-8">
+        <div className="max-w-[1400px] mx-auto px-6 lg:px-8 py-6">
           {/* Header */}
-          <div className="flex items-center justify-between mb-10 gap-4">
-            <div className="shrink-0">
-              {currentView === 'search' && searchQuery ? (
-                <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground">
-                  Results for "<span className="text-primary">{searchQuery}</span>"
-                </h1>
-              ) : currentView === 'queue' ? null : (
-                <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground flex items-center gap-3">
-                  {currentView === 'trending' ? (
-                    <>
-                      <TrendingUp className="h-6 w-6 text-primary" />
-                      Trending Now
-                    </>
-                  ) : (
-                    <>Good {getGreeting()} 👋</>
-                  )}
-                </h1>
-              )}
+          {!isLegalPage && !isLyricsPage && (
+            <div className="flex items-center justify-between mb-8 gap-4">
+              <div className="shrink-0">
+                {currentView === 'search' && searchQuery ? (
+                  <h1 className="font-display text-xl md:text-2xl font-bold text-foreground">
+                    Results for "<span className="text-primary">{searchQuery}</span>"
+                  </h1>
+                ) : currentView === 'queue' ? null : (
+                  <h1 className="font-display text-xl md:text-2xl font-bold text-foreground flex items-center gap-2.5">
+                    {currentView === 'trending' ? (
+                      <>
+                        <TrendingUp className="h-5 w-5 text-primary" />
+                        Trending Now
+                      </>
+                    ) : (
+                      <>Good {getGreeting()} 👋</>
+                    )}
+                  </h1>
+                )}
+              </div>
+              <SearchBar onSearch={handleSearch} />
             </div>
-            <SearchBar onSearch={handleSearch} />
-          </div>
+          )}
 
           {/* Content */}
-          {currentView === 'queue' ? (
+          {isLegalPage ? (
+            <LegalPage type={currentView as 'terms' | 'privacy'} />
+          ) : isLyricsPage ? (
+            <LyricsView />
+          ) : currentView === 'queue' ? (
             <QueueView />
           ) : loading ? (
             <div className="flex flex-col items-center justify-center py-32 gap-3">
-              <Loader2 className="h-8 w-8 text-primary animate-spin" />
-              <p className="text-sm text-muted-foreground">Loading music...</p>
+              <Loader2 className="h-6 w-6 text-primary animate-spin" />
+              <p className="text-xs text-muted-foreground">Loading...</p>
             </div>
           ) : error ? (
-            <div className="flex flex-col items-center justify-center py-32 gap-4 max-w-md mx-auto text-center">
-              <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center">
-                <AlertCircle className="h-8 w-8 text-destructive" />
+            <div className="flex flex-col items-center justify-center py-32 gap-4 max-w-sm mx-auto text-center">
+              <div className="h-14 w-14 rounded-full bg-destructive/10 flex items-center justify-center">
+                <AlertCircle className="h-6 w-6 text-destructive" />
               </div>
               <div>
-                <p className="text-foreground font-display font-semibold mb-2">Something went wrong</p>
-                <p className="text-sm text-muted-foreground leading-relaxed">
+                <p className="text-foreground font-display font-semibold text-sm mb-1">Something went wrong</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">
                   {error.includes('not been used') || error.includes('disabled')
-                    ? 'The YouTube Data API v3 is not enabled for your API key. Enable it in the Google Cloud Console, wait a minute, then refresh.'
+                    ? 'YouTube Data API v3 is not enabled for your API key. Enable it in Google Cloud Console.'
                     : error}
                 </p>
               </div>
               <button
                 onClick={() => currentView === 'search' ? handleSearch(searchQuery) : loadTrending()}
-                className="mt-2 px-5 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-full hover:opacity-90 transition-opacity"
+                className="px-4 py-1.5 bg-primary text-primary-foreground text-xs font-medium rounded-full hover:opacity-90 transition-opacity"
               >
                 Try Again
               </button>
             </div>
           ) : (
             <div className="animate-fade-in">
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-1">
                 {tracks.map(track => (
                   <TrackCard key={track.id} track={track} />
                 ))}
               </div>
               {tracks.length === 0 && !loading && (
                 <div className="text-center py-32">
-                  <Music2 className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                  <p className="text-foreground font-display font-semibold mb-1">Start listening</p>
-                  <p className="text-sm text-muted-foreground">Search for your favorite artists and songs</p>
+                  <Music2 className="h-10 w-10 text-muted-foreground/20 mx-auto mb-4" />
+                  <p className="text-foreground font-display font-semibold text-sm mb-1">Start listening</p>
+                  <p className="text-xs text-muted-foreground">Search for your favorite songs</p>
                 </div>
               )}
             </div>
@@ -146,7 +156,10 @@ function MainContent() {
         </div>
       </main>
 
-      <BottomPlayer />
+      <BottomPlayer
+        onLyricsToggle={() => handleNavigate(currentView === 'lyrics' ? 'home' : 'lyrics')}
+        lyricsActive={currentView === 'lyrics'}
+      />
     </div>
   );
 }
